@@ -1,0 +1,12 @@
+[
+  {
+    "id": "local",
+    "name": "Local (dev loopback)",
+    "baseUrl": "http://127.0.0.1:3001"
+  },
+  {
+    "id": "rig-1",
+    "name": "Rig 1 (lounge)",
+    "baseUrl": "http://192.168.1.50:3001"
+  }
+]

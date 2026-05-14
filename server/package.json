@@ -1,0 +1,17 @@
+{
+  "name": "ac-remote-launcher-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Central web app: lists rigs and content, dispatches launch requests to rig agents",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

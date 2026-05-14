@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC Remote Launcher (POC)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>AC Remote Launcher</h1>
+    <span class="badge">POC</span>
+    <span id="content-meta" class="content-meta"></span>
+    <button id="refresh-content" class="btn-ghost" title="Re-scan installed content on the source rig">Refresh content</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Rig</h2>
+      <div id="rigs" class="rig-list">Loading rigs…</div>
+    </section>
+
+    <div class="two-col">
+      <section class="card">
+        <h2>Car</h2>
+        <div class="filter-row">
+          <input type="search" id="car-filter" placeholder="Filter cars…" />
+        </div>
+        <select id="car" size="8"></select>
+        <label class="inline">
+          Skin
+          <select id="skin"></select>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Track</h2>
+        <div class="filter-row">
+          <input type="search" id="track-filter" placeholder="Filter tracks…" />
+        </div>
+        <select id="track" size="8"></select>
+        <label class="inline">
+          Layout
+          <select id="layout"></select>
+        </label>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>Session</h2>
+      <div class="grid grid-3">
+        <label>
+          Mode
+          <select id="mode">
+            <option value="practice">Practice</option>
+            <option value="hotlap">Hotlap</option>
+            <option value="race">Race</option>
+            <option value="timeattack">Time Attack</option>
+            <option value="drift">Drift</option>
+          </select>
+        </label>
+        <label id="duration-field">
+          Duration (min)
+          <input type="number" id="duration" value="30" min="1" max="600" />
+        </label>
+        <label id="laps-field" class="hidden">
+          Laps
+          <input type="number" id="laps" value="5" min="1" max="200" />
+        </label>
+        <label>
+          Weather
+          <select id="weather"></select>
+        </label>
+        <label>
+          Time of day
+          <input type="range" id="time-of-day" min="25200" max="68400" step="300" value="46800" />
+          <span id="time-of-day-label" class="range-label">13:00</span>
+        </label>
+        <label>
+          Ambient °C
+          <input type="number" id="ambient-temp" value="22" min="-20" max="50" />
+        </label>
+        <label>
+          Road °C
+          <input type="number" id="road-temp" value="28" min="-20" max="70" />
+        </label>
+        <label>
+          Wind speed (km/h)
+          <input type="number" id="wind-speed" value="0" min="0" max="60" />
+        </label>
+        <label>
+          Wind dir (°)
+          <input type="number" id="wind-direction" value="0" min="0" max="359" />
+        </label>
+      </div>
+
+      <h3 class="subsection">AI opponents</h3>
+      <div id="ai-warning" class="inline-warn hidden">This track layout has no AI line. AI cars would crash AC, so opponents are disabled.</div>
+      <div class="grid grid-3">
+        <label>
+          Count
+          <input type="number" id="ai-count" value="0" min="0" max="30" />
+        </label>
+        <label>
+          Level (%)
+          <input type="number" id="ai-level" value="90" min="50" max="100" />
+        </label>
+        <label>
+          Aggression (%)
+          <input type="number" id="ai-aggression" value="50" min="0" max="100" />
+        </label>
+      </div>
+
+      <h3 class="subsection">Other</h3>
+      <div class="grid grid-3">
+        <label>
+          Driver name
+          <input type="text" id="driver-name" value="Driver" maxlength="40" />
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="penalties" checked />
+          Penalties on
+        </label>
+      </div>
+    </section>
+
+    <section class="card actions">
+      <button id="launch" class="btn-primary" disabled>Launch session</button>
+      <button id="stop" class="btn-warn" disabled>Stop AC</button>
+      <button id="clear-cache" class="btn-ghost" disabled>Clear cache</button>
+    </section>
+
+    <section class="card">
+      <h2>Multiplayer — join a race server</h2>
+      <div class="grid grid-2">
+        <label>
+          Server
+          <select id="mp-server"></select>
+        </label>
+        <label>
+          Car (sent as REQUESTED_CAR)
+          <select id="mp-car"></select>
+        </label>
+      </div>
+      <div id="mp-server-info" class="server-info">Pick a server.</div>
+      <div class="actions">
+        <button id="mp-join" class="btn-primary" disabled>Join on selected rig</button>
+        <button id="mp-join-all" class="btn-primary" disabled>Send all rigs to this server</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Live session</h2>
+      <div id="live-session" class="live-session">No rig selected.</div>
+      <pre id="status" class="status"></pre>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

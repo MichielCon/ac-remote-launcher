@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Per-machine config overrides (real paths stay out of git)
+rig-agent/config.local.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude Code local settings
+.claude/

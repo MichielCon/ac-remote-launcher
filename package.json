@@ -1,0 +1,15 @@
+{
+  "name": "ac-content-manager-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "POC: central web app to remote-launch Assetto Corsa sessions on sim rigs",
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix rig-agent install",
+    "dev": "concurrently -n server,agent -c blue,green \"npm --prefix server start\" \"npm --prefix rig-agent start\"",
+    "server": "npm --prefix server start",
+    "agent": "npm --prefix rig-agent start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "local-test",
+    "name": "Local test (dummy)",
+    "host": "127.0.0.1",
+    "racePort": 9600,
+    "httpPort": 8081,
+    "password": "",
+    "defaultCarId": "ks_porsche_911_gt3_rs"
+  },
+  {
+    "id": "aws-primary",
+    "name": "AWS primary (placeholder)",
+    "host": "0.0.0.0",
+    "racePort": 9600,
+    "httpPort": 8081,
+    "password": "",
+    "defaultCarId": "ks_audi_sport_quattro_s1"
+  }
+]

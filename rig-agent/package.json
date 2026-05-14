@@ -1,0 +1,17 @@
+{
+  "name": "ac-rig-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runs on each sim rig. Receives HTTP launch requests, writes race.ini, spawns acs.exe.",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
