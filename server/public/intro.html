@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Loading…</title>
+<style>
+  html, body { margin:0; padding:0; background:#000; color:#fff; height:100vh; width:100vw; overflow:hidden; font-family:system-ui,sans-serif; cursor:none; }
+  video {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: contain;
+    background: #000;
+  }
+  .placeholder {
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    height:100vh; gap:24px;
+  }
+  .placeholder h1 { font-size:48px; margin:0; letter-spacing:0.06em; }
+  .placeholder p { color:#888; margin:0; }
+  .skip {
+    position:fixed; top:24px; right:24px;
+    padding:12px 22px;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.25);
+    color:#fff; font:14px system-ui; border-radius:8px;
+    cursor:pointer; letter-spacing:0.05em;
+  }
+  .skip:hover { background:rgba(255,255,255,0.18); }
+  .countdown { position:fixed; bottom:24px; left:24px; color:#666; font:12px ui-monospace,monospace; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <button class="skip" onclick="finish('skip')">Skip ›</button>
+  <div id="countdown" class="countdown"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const jobId = params.get('job');
+const rigId = params.get('rig');
+let finished = false;
+
+async function finish(reason) {
+  if (finished) return;
+  finished = true;
+  try {
+    await fetch('/api/intro-done', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobId, rigId, reason })
+    });
+  } catch (err) {
+    document.body.innerHTML = '<p style="padding:24px;color:#f87">Failed to notify central server: ' + err.message + '</p>';
+  }
+}
+
+async function init() {
+  const probe = await fetch('/api/intro/video', { method: 'HEAD' });
+  const root = document.getElementById('root');
+  if (!probe.ok) return placeholder();
+
+  root.innerHTML = '<video id="v" src="/api/intro/video" playsinline preload="auto"></video>';
+  const v = document.getElementById('v');
+  v.addEventListener('ended', () => finish('ended'));
+  v.addEventListener('error', () => placeholder());
+  document.body.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') finish('skip');
+  });
+
+  // Try to play with sound first. If the browser's autoplay policy still
+  // blocks it (unlikely with --autoplay-policy=no-user-gesture-required, but
+  // possible), retry muted. If that also fails, show a click-to-start hint.
+  try {
+    await v.play();
+    return;
+  } catch (err) {
+    console.warn('unmuted autoplay blocked, retrying muted:', err);
+  }
+  v.muted = true;
+  try {
+    await v.play();
+    return;
+  } catch (err) {
+    console.warn('muted autoplay also blocked:', err);
+  }
+  showClickToStart(v);
+}
+
+function showClickToStart(v) {
+  const hint = document.createElement('div');
+  hint.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);font-size:24px;letter-spacing:0.05em;cursor:pointer;';
+  hint.textContent = 'Click anywhere to start';
+  document.body.appendChild(hint);
+  hint.addEventListener('click', () => {
+    v.muted = false;
+    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    hint.remove();
+  });
+}
+
+function placeholder() {
+  let remaining = 5;
+  document.getElementById('root').innerHTML = `
+    <div class="placeholder">
+      <h1>Intro video</h1>
+      <p>No intro file uploaded to the central server.</p>
+      <p style="font-size:12px;color:#555">Use the operator UI to upload one.</p>
+    </div>`;
+  const tick = setInterval(() => {
+    remaining--;
+    document.getElementById('countdown').textContent = remaining > 0 ? `auto-skip in ${remaining}s` : '';
+    if (remaining <= 0) {
+      clearInterval(tick);
+      finish('placeholder-timeout');
+    }
+  }, 1000);
+}
+
+init();
+</script>
+</body>
+</html>

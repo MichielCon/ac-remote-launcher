@@ -4,6 +4,9 @@ node_modules/
 # Per-machine config overrides (real paths stay out of git)
 rig-agent/config.local.json
 
+# Operator-uploaded data (intro videos, etc.)
+server/data/
+
 # Environment
 .env
 .env.local

@@ -127,7 +127,12 @@ All endpoints return JSON. No auth (LAN-only).
 | `POST` | `/api/rigs/:id/clear-cache` | Delete `Documents\Assetto Corsa\cache` on this rig. |
 | `GET`  | `/api/content` | Installed content (cars, tracks, weather), pulled from a rig and cached server-side. `?refresh=true` forces re-scan. `?source=<rigId>` selects a specific rig as the content source. |
 | `POST` | `/api/launch` | Launch an offline session. See payload below. |
-| `POST` | `/api/play-then-launch` | Same payload as `/api/launch`. Plays an intro video on the rig in a kiosk browser; AC launches when the video ends or the driver skips. |
+| `POST` | `/api/play-then-launch` | Same payload as `/api/launch`. Plays the central intro video on the rig in a kiosk browser; AC launches when the video ends or the driver skips. |
+| `GET`  | `/api/intro/video/status` | Whether an intro video is uploaded; returns size, content-type, uploaded timestamp. |
+| `GET`  | `/api/intro/video` | Streams the uploaded intro video (404 if none). |
+| `PUT`  | `/api/intro/video` | Upload a new intro video. Body is raw bytes; `Content-Type` must be one of `video/mp4`, `video/webm`, `video/ogg`, `video/quicktime`. 500 MB cap. Replaces any prior upload. |
+| `DELETE` | `/api/intro/video` | Remove the uploaded intro video. |
+| `POST` | `/api/intro-done` | Internal: called by the kiosk page on the rig. Body `{ jobId, rigId, reason }`. Forwards to the agent's `/intro/done`. |
 | `GET`  | `/api/servers` | List saved AC dedicated servers (`servers.json` content). |
 | `GET`  | `/api/servers/:id/info` | Probe `http://host:httpPort/INFO` (30 s cache, 3 s timeout). Returns `{ reachable: false, reason }` on failure. |
 | `POST` | `/api/rigs/:id/join` | Join an AC dedicated server on this rig. See payload below. |
@@ -182,21 +187,20 @@ The rig's own driver name (from its `config.local.json` or fallback) is used whe
 
 The **Play intro video first** checkbox (next to the Launch button) makes the rig play a short video before AC starts. The video plays in a fullscreen kiosk browser on the rig; the driver can press Skip / Esc / Space / Enter at any time. When the video ends or is skipped, AC launches normally.
 
-**How it works:** the agent stashes the launch payload, spawns `msedge.exe --kiosk` pointed at its own `/intro/page` URL, and waits. The page is just HTML + a `<video>` element fetching `/intro/video`. Skip click / video-end fires `POST /intro/done`, which kills the kiosk browser and runs the normal launch flow.
+**The video lives only on the central server** — operators upload it once via the **Intro video** card in the UI, and every rig pulls from there. No per-rig file management.
 
-**Configure a video on a rig:**
-```json
-// rig-agent/config.json (or config.local.json)
-{
-  "introVideoPath": "C:\\path\\to\\intro.mp4",
-  "kioskBrowserPath": null
-}
-```
+**Flow:**
+1. Operator clicks **Launch session** with the intro checkbox on.
+2. Server generates a `jobId`, picks the rig, asks the agent to spawn a kiosk browser pointed at `http://<central>/intro.html?job=…&rig=…`.
+3. Kiosk page (served by the central server) fetches `/api/intro/video` and plays it. If no video is uploaded, it shows a 5-second placeholder and auto-skips.
+4. On video-end or Skip / Esc / Space / Enter, the page POSTs `/api/intro-done {jobId, rigId}` back to the central server.
+5. Server forwards `POST /intro/done` to the agent, which kills the kiosk browser and runs the normal race.ini + `acs.exe` launch.
 
-- `introVideoPath` — absolute path to any HTML5-compatible file (MP4 / WebM / OGV). If unset or missing, the intro page shows a 5-second placeholder ("No intro file configured") and auto-skips. So leaving it `null` is a valid no-op default.
-- `kioskBrowserPath` — defaults to Microsoft Edge (`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`) with Chrome fallback. Override if you've installed a browser elsewhere. If no browser is found, `/play-then-launch` returns a 500 with a clear message — uncheck the box to launch without intro.
+**Upload limits:** 500 MB max, accepts `video/mp4`, `video/webm`, `video/ogg`, `video/quicktime`. The current upload replaces any previous one.
 
-**Lead-dev path forward:** this is intentionally a placeholder approach. The eventual plan is to **bake this into a bundled client** on each rig (Electron-style) with a local control socket that only accepts loopback commands. At that point, the agent's `/play-then-launch` + `/intro/*` endpoints become an internal call inside that client; the central server's API stays unchanged.
+**Browser requirement on each rig:** the agent spawns Microsoft Edge in kiosk mode by default (`msedge.exe --kiosk`), with Chrome as a fallback. Edge ships with Windows 10/11 so this works out of the box. Override `kioskBrowserPath` in `rig-agent/config.json` (or `config.local.json`) if you've got a custom path. If no browser is found, the agent returns a clear error and the operator can uncheck the intro box to launch without it.
+
+**Lead-dev path forward:** the kiosk-browser dance on the rig is intentionally a placeholder. The eventual plan is to bake the rig agent into a bundled client (Electron-style) with a local-only control socket. At that point, the kiosk-spawn step inside the agent becomes an internal call inside that client. The central server's API doesn't change.
 
 ## Configuration reference
 
@@ -237,10 +241,11 @@ The **Play intro video first** checkbox (next to the Launch button) makes the ri
   "acDocumentsPath": null,
   "agentPort": 3001,
   "driverName": null,
-  "introVideoPath": null,
   "kioskBrowserPath": null
 }
 ```
+
+`kioskBrowserPath` — override the default Edge/Chrome lookup. Leave `null` to auto-detect.
 
 - `acDocumentsPath: null` → resolves to `%USERPROFILE%\Documents\Assetto Corsa` at runtime.
 - `driverName: null` → falls back to `"Rig <agentPort>"` (e.g. `Rig 3001`).

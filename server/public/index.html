@@ -135,6 +135,17 @@
     </section>
 
     <section class="card">
+      <h2>Intro video (shown on the rig before AC launches)</h2>
+      <div id="intro-status" class="server-info">Loading…</div>
+      <div class="actions">
+        <input type="file" id="intro-file" accept="video/mp4,video/webm,video/ogg,video/quicktime" style="display:none" />
+        <button id="intro-upload" class="btn-primary">Upload video</button>
+        <button id="intro-remove" class="btn-warn" disabled>Remove</button>
+        <span id="intro-progress" class="content-meta"></span>
+      </div>
+    </section>
+
+    <section class="card">
       <h2>Multiplayer — join a race server</h2>
       <div class="grid grid-2">
         <label>

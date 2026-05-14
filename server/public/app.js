@@ -455,8 +455,81 @@ $('#mp-join-all').addEventListener('click', async () => {
   refreshLiveSession();
 });
 
+// ---------- Intro video upload ----------
+
+function formatBytes(n) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 ** 3) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+async function refreshIntroStatus() {
+  const el = $('#intro-status');
+  try {
+    const r = await fetch('/api/intro/video/status');
+    const body = await r.json();
+    if (!body.exists) {
+      el.className = 'server-info';
+      el.textContent = 'No intro video uploaded. Rigs show a 5-second placeholder, then launch AC.';
+      $('#intro-remove').disabled = true;
+      return;
+    }
+    el.className = 'server-info reachable';
+    el.innerHTML = `
+      <div class="row"><span class="key">File</span><span class="val">${body.filename}</span></div>
+      <div class="row"><span class="key">Size</span><span class="val">${formatBytes(body.size)}</span></div>
+      <div class="row"><span class="key">Type</span><span class="val">${body.contentType}</span></div>
+      <div class="row"><span class="key">Uploaded</span><span class="val">${new Date(body.uploadedAt).toLocaleString()}</span></div>
+    `;
+    $('#intro-remove').disabled = false;
+  } catch (err) {
+    el.className = 'server-info unreachable';
+    el.textContent = `Failed to load intro status: ${err.message}`;
+  }
+}
+
+$('#intro-upload').addEventListener('click', () => $('#intro-file').click());
+
+$('#intro-file').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const progress = $('#intro-progress');
+  progress.textContent = `Uploading ${file.name} (${formatBytes(file.size)})…`;
+
+  try {
+    const r = await fetch('/api/intro/video', {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file
+    });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.error || `HTTP ${r.status}`);
+    progress.textContent = `Uploaded ${formatBytes(body.size)}`;
+  } catch (err) {
+    progress.textContent = `Upload failed: ${err.message}`;
+  } finally {
+    e.target.value = '';
+    refreshIntroStatus();
+  }
+});
+
+$('#intro-remove').addEventListener('click', async () => {
+  if (!confirm('Remove the uploaded intro video?')) return;
+  try {
+    const r = await fetch('/api/intro/video', { method: 'DELETE' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    $('#intro-progress').textContent = 'Removed';
+  } catch (err) {
+    $('#intro-progress').textContent = `Remove failed: ${err.message}`;
+  } finally {
+    refreshIntroStatus();
+  }
+});
+
 (async function init() {
   await loadRigs();
   await loadContent();
   await loadServers();
+  await refreshIntroStatus();
 })();

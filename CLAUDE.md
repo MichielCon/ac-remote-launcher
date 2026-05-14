@@ -38,7 +38,8 @@ Both speak HTTP. Default ports: `3000` (server UI/API), `3001` (each rig agent).
 | --- | --- |
 | `rig-agent/lib/raceIni.js` | **Load-bearing.** Pure function `buildRaceIni({ carId, trackId, ..., online? })` → ini string. Every feature (mode/weather/AI/time/multiplayer) is a field here. |
 | `rig-agent/lib/contentScan.js` | Reads `<acInstallPath>/content/{cars,tracks,weather}` and returns rich JSON with display names, layouts, skins, and `aiSupported` per layout. |
-| `rig-agent/agent.js` | The agent's HTTP surface: `/health`, `/content`, `/status`, `/launch`, `/join`, `/stop`, `/clear-cache`, plus the intro-video flow (`/play-then-launch`, `/intro/page`, `/intro/video`, `/intro/done`). Reuses one `writeIniAndSpawn` helper for `/launch`, `/join`, and `/intro/done`. |
+| `rig-agent/agent.js` | The agent's HTTP surface: `/health`, `/content`, `/status`, `/launch`, `/join`, `/stop`, `/clear-cache`, plus the intro-video hooks (`/play-then-launch`, `/intro/done`). Reuses one `writeIniAndSpawn` helper for `/launch`, `/join`, and `/intro/done`. |
+| `server/public/intro.html` | Fullscreen kiosk page the central server hands to the rig browser. Fetches `/api/intro/video` and POSTs `/api/intro-done` when the driver skips or the video ends. |
 | `server/index.js` | Central API. Proxies to rig agents; caches content; probes AC server `/INFO` endpoint; fans out `/api/join-all` to every rig. |
 | `server/public/app.js` | Vanilla JS UI. State object at top, render functions, event listeners at the bottom. No framework, no build step. |
 | `server/config/rigs.json` | Registry of rigs: `[{ id, name, baseUrl }]`. Manually edited. |
@@ -73,7 +74,7 @@ Field names in `race.ini` are derived from `gro-ove/actools` (the Content Manage
 
 9. **`config.local.json` is the override pattern.** `rig-agent/config.json` ships with the Steam default AC path; per-machine paths live in `rig-agent/config.local.json` (gitignored). `agent.js` does a shallow merge — local on top of base.
 
-10. **The intro-video flow is deliberately a placeholder.** Today: `/play-then-launch` stashes the payload in `introJobs`, spawns `msedge.exe --kiosk` pointing at the agent's own `/intro/page`, and waits for the browser to POST `/intro/done`. The eventual plan (per the lead dev) is to bake this into a bundled client on each rig with a local-only control socket — at which point the kiosk-browser dance goes away and `/play-then-launch` becomes an internal call inside that client. The central server's API doesn't need to change. Job state lives in a `Map<jobId, {payload, browserChild, createdAt}>` and auto-expires after 10 minutes via a 1-minute janitor interval.
+10. **The intro-video flow is split across server and agent on purpose.** The **central server** stores the video (in `server/data/intro/current.<ext>`, gitignored), serves the kiosk page, and accepts the done callback. The **rig agent** only spawns the kiosk browser at a server-provided URL and stashes the launch payload until the server forwards the done event. This means there's a single video file uploaded once via the UI — no per-rig content management. Job state lives in `Map<jobId, {payload, browserChild, createdAt}>` on the agent and auto-expires after 10 minutes. The eventual plan (per the lead dev) is to bake the agent into a bundled client with a local-only control socket; the kiosk-browser dance becomes an internal call inside that client, central server's API unchanged.
 
 ## Repo conventions
 
