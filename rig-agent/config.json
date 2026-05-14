@@ -2,5 +2,7 @@
   "acInstallPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa",
   "acDocumentsPath": null,
   "agentPort": 3001,
-  "driverName": null
+  "driverName": null,
+  "introVideoPath": null,
+  "kioskBrowserPath": null
 }

@@ -198,6 +198,25 @@ app.post('/api/launch', async (req, res) => {
   });
 });
 
+app.post('/api/play-then-launch', async (req, res) => {
+  const { rigId, ...payload } = req.body ?? {};
+  if (!rigId) return res.status(400).json({ ok: false, error: 'rigId is required' });
+  if (!payload.carId || !payload.trackId) {
+    return res.status(400).json({ ok: false, error: 'carId and trackId are required' });
+  }
+
+  const { status, body, rig } = await proxyToRig(rigId, '/play-then-launch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  res.status(status).json({
+    rig: rig ? { id: rig.id, name: rig.name } : null,
+    ...body
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`[server] listening on http://localhost:${PORT}`);
 });

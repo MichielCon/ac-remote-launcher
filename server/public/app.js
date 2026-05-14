@@ -254,9 +254,11 @@ function gatherPayload() {
 }
 
 $('#launch').addEventListener('click', async () => {
-  showStatus('Launching…');
+  const withIntro = $('#play-intro').checked;
+  const endpoint = withIntro ? '/api/play-then-launch' : '/api/launch';
+  showStatus(withIntro ? 'Playing intro on rig…' : 'Launching…');
   const payload = gatherPayload();
-  const r = await api('/api/launch', {
+  const r = await api(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)

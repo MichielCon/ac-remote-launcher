@@ -127,6 +127,7 @@ All endpoints return JSON. No auth (LAN-only).
 | `POST` | `/api/rigs/:id/clear-cache` | Delete `Documents\Assetto Corsa\cache` on this rig. |
 | `GET`  | `/api/content` | Installed content (cars, tracks, weather), pulled from a rig and cached server-side. `?refresh=true` forces re-scan. `?source=<rigId>` selects a specific rig as the content source. |
 | `POST` | `/api/launch` | Launch an offline session. See payload below. |
+| `POST` | `/api/play-then-launch` | Same payload as `/api/launch`. Plays an intro video on the rig in a kiosk browser; AC launches when the video ends or the driver skips. |
 | `GET`  | `/api/servers` | List saved AC dedicated servers (`servers.json` content). |
 | `GET`  | `/api/servers/:id/info` | Probe `http://host:httpPort/INFO` (30 s cache, 3 s timeout). Returns `{ reachable: false, reason }` on failure. |
 | `POST` | `/api/rigs/:id/join` | Join an AC dedicated server on this rig. See payload below. |
@@ -177,6 +178,26 @@ Only `rigId`, `carId`, `trackId` are required. `mode` is one of `practice`, `hot
 
 The rig's own driver name (from its `config.local.json` or fallback) is used when `driverName` is omitted.
 
+## Intro video before launch (optional)
+
+The **Play intro video first** checkbox (next to the Launch button) makes the rig play a short video before AC starts. The video plays in a fullscreen kiosk browser on the rig; the driver can press Skip / Esc / Space / Enter at any time. When the video ends or is skipped, AC launches normally.
+
+**How it works:** the agent stashes the launch payload, spawns `msedge.exe --kiosk` pointed at its own `/intro/page` URL, and waits. The page is just HTML + a `<video>` element fetching `/intro/video`. Skip click / video-end fires `POST /intro/done`, which kills the kiosk browser and runs the normal launch flow.
+
+**Configure a video on a rig:**
+```json
+// rig-agent/config.json (or config.local.json)
+{
+  "introVideoPath": "C:\\path\\to\\intro.mp4",
+  "kioskBrowserPath": null
+}
+```
+
+- `introVideoPath` — absolute path to any HTML5-compatible file (MP4 / WebM / OGV). If unset or missing, the intro page shows a 5-second placeholder ("No intro file configured") and auto-skips. So leaving it `null` is a valid no-op default.
+- `kioskBrowserPath` — defaults to Microsoft Edge (`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`) with Chrome fallback. Override if you've installed a browser elsewhere. If no browser is found, `/play-then-launch` returns a 500 with a clear message — uncheck the box to launch without intro.
+
+**Lead-dev path forward:** this is intentionally a placeholder approach. The eventual plan is to **bake this into a bundled client** on each rig (Electron-style) with a local control socket that only accepts loopback commands. At that point, the agent's `/play-then-launch` + `/intro/*` endpoints become an internal call inside that client; the central server's API stays unchanged.
+
 ## Configuration reference
 
 ### `server/config/rigs.json`
@@ -215,7 +236,9 @@ The rig's own driver name (from its `config.local.json` or fallback) is used whe
   "acInstallPath": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\assettocorsa",
   "acDocumentsPath": null,
   "agentPort": 3001,
-  "driverName": null
+  "driverName": null,
+  "introVideoPath": null,
+  "kioskBrowserPath": null
 }
 ```
 
